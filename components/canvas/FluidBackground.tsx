@@ -281,9 +281,9 @@ export default function FluidBackground() {
         const canvas = canvasRef.current
         if (!canvas) return
 
-        // === DYNAMIC QUALITY DETECTION ===
-        let tierIndex = detectInitialTier(isMobile)
-        let currentTier = QUALITY_TIERS[tierIndex]
+        // === QUALITY DETECTION (once on load, locked in) ===
+        const tierIndex = detectInitialTier(isMobile)
+        const currentTier = QUALITY_TIERS[tierIndex]
 
         const gl = canvas.getContext('webgl', {
             alpha: false,
@@ -292,16 +292,11 @@ export default function FluidBackground() {
         })
         if (!gl) return
 
-        // Build shader for the detected quality tier
-        function buildProgram(tier: QualityTier) {
-            const fragSource = generateFragmentShader(tier.threads, tier.fbmOctaves)
-            const vs = createShader(gl!, gl!.VERTEX_SHADER, vertexShaderSource)
-            const fs = createShader(gl!, gl!.FRAGMENT_SHADER, fragSource)
-            if (!vs || !fs) return null
-            return createProgram(gl!, vs, fs)
-        }
-
-        let program = buildProgram(currentTier)
+        const fragSource = generateFragmentShader(currentTier.threads, currentTier.fbmOctaves)
+        const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fragSource)
+        if (!vs || !fs) return
+        const program = createProgram(gl, vs, fs)
         if (!program) return
 
         const positionBuffer = gl.createBuffer()
@@ -310,12 +305,12 @@ export default function FluidBackground() {
             -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1
         ]), gl.STATIC_DRAW)
 
-        let positionLocation = gl.getAttribLocation(program, 'a_position')
-        let resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
-        let timeLocation = gl.getUniformLocation(program, 'u_time')
-        let mouseLocation = gl.getUniformLocation(program, 'u_mouse')
-        let clickTimeLocation = gl.getUniformLocation(program, 'u_clickTime')
-        let clickPosLocation = gl.getUniformLocation(program, 'u_clickPos')
+        const positionLocation = gl.getAttribLocation(program, 'a_position')
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        const timeLocation = gl.getUniformLocation(program, 'u_time')
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+        const clickTimeLocation = gl.getUniformLocation(program, 'u_clickTime')
+        const clickPosLocation = gl.getUniformLocation(program, 'u_clickPos')
 
         function applyResolution() {
             const baseDpr = window.devicePixelRatio || 1
@@ -345,15 +340,8 @@ export default function FluidBackground() {
         }
         window.addEventListener('resize', applyResolution)
 
-        // === ADAPTIVE FPS MONITORING ===
         let animationId: number
         const startTime = performance.now()
-        let frameCount = 0
-        let lastFpsCheck = performance.now()
-        let hasDowngraded = false
-        const FPS_CHECK_INTERVAL = 2000 // Check every 2 seconds
-        const FPS_SAMPLES_BEFORE_ADAPT = 2 // Wait 2 checks (4 seconds) before downgrading
-        let lowFpsStreak = 0
 
         // Frame throttle for low tier
         let lastFrameTime = 0
@@ -367,43 +355,6 @@ export default function FluidBackground() {
             lastFrameTime = now
 
             const time = (now - startTime) / 1000
-            frameCount++
-
-            // === FPS CHECK & AUTO-DOWNGRADE ===
-            if (!hasDowngraded && now - lastFpsCheck >= FPS_CHECK_INTERVAL) {
-                const elapsed = (now - lastFpsCheck) / 1000
-                const fps = frameCount / elapsed
-                frameCount = 0
-                lastFpsCheck = now
-
-                if (fps < currentTier.targetFps * 0.6) {
-                    lowFpsStreak++
-                    if (lowFpsStreak >= FPS_SAMPLES_BEFORE_ADAPT && tierIndex < QUALITY_TIERS.length - 1) {
-                        // Downgrade quality
-                        tierIndex++
-                        currentTier = QUALITY_TIERS[tierIndex]
-
-                        const newProgram = buildProgram(currentTier)
-                        if (newProgram) {
-                            gl!.deleteProgram(program)
-                            program = newProgram
-                            positionLocation = gl!.getAttribLocation(program, 'a_position')
-                            resolutionLocation = gl!.getUniformLocation(program, 'u_resolution')
-                            timeLocation = gl!.getUniformLocation(program, 'u_time')
-                            mouseLocation = gl!.getUniformLocation(program, 'u_mouse')
-                            clickTimeLocation = gl!.getUniformLocation(program, 'u_clickTime')
-                            clickPosLocation = gl!.getUniformLocation(program, 'u_clickPos')
-                            applyResolution()
-                        }
-
-                        lowFpsStreak = 0
-                        // Allow one more downgrade attempt
-                        if (tierIndex >= QUALITY_TIERS.length - 1) hasDowngraded = true
-                    }
-                } else {
-                    lowFpsStreak = 0
-                }
-            }
 
             gl!.useProgram(program)
             gl!.uniform2f(resolutionLocation, canvas!.width, canvas!.height)
