@@ -333,35 +333,16 @@ export default function FluidBackground() {
             }
         }
 
-        const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length > 0) {
-                const touch = e.touches[0]
-                mouseRef.current = {
-                    x: touch.clientX / window.innerWidth,
-                    y: 1.0 - touch.clientY / window.innerHeight
-                }
-            }
+        // On mobile, push mouse position off-screen so there's no glow/distortion at center
+        if (isMobile) {
+            mouseRef.current = { x: -1, y: -1 }
         }
 
-        const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length > 0) {
-                const touch = e.touches[0]
-                mouseRef.current = {
-                    x: touch.clientX / window.innerWidth,
-                    y: 1.0 - touch.clientY / window.innerHeight
-                }
-                clickRef.current = {
-                    time: performance.now() / 1000,
-                    x: touch.clientX / window.innerWidth,
-                    y: 1.0 - touch.clientY / window.innerHeight
-                }
-            }
+        // Only add mouse/click listeners on desktop
+        if (!isMobile) {
+            window.addEventListener('mousemove', handleMouseMove)
+            window.addEventListener('click', handleClick)
         }
-
-        window.addEventListener('mousemove', handleMouseMove)
-        window.addEventListener('click', handleClick)
-        window.addEventListener('touchmove', handleTouchMove, { passive: true })
-        window.addEventListener('touchstart', handleTouchStart, { passive: true })
         window.addEventListener('resize', applyResolution)
 
         // === ADAPTIVE FPS MONITORING ===
@@ -440,10 +421,10 @@ export default function FluidBackground() {
 
         return () => {
             cancelAnimationFrame(animationId)
-            window.removeEventListener('mousemove', handleMouseMove)
-            window.removeEventListener('click', handleClick)
-            window.removeEventListener('touchmove', handleTouchMove)
-            window.removeEventListener('touchstart', handleTouchStart)
+            if (!isMobile) {
+                window.removeEventListener('mousemove', handleMouseMove)
+                window.removeEventListener('click', handleClick)
+            }
             window.removeEventListener('resize', applyResolution)
             gl.deleteProgram(program)
         }
@@ -453,7 +434,7 @@ export default function FluidBackground() {
         <canvas
             ref={canvasRef}
             className="fixed inset-0 -z-10 w-full h-full"
-            style={{ display: 'block', touchAction: 'none' }}
+            style={{ display: 'block' }}
         />
     )
 }
