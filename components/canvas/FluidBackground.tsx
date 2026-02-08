@@ -11,22 +11,62 @@ const vertexShaderSource = `
     }
 `
 
-// Fragment Shader - "Liquid Silk" Flowing Threads
-const fragmentShaderSource = `
+// Quality tiers — thread count & FBM octaves baked into shader at compile time
+interface QualityTier {
+    label: string
+    threads: number
+    fbmOctaves: number
+    dprScale: number   // multiplier on device pixel ratio
+    targetFps: number
+}
+
+const QUALITY_TIERS: QualityTier[] = [
+    { label: 'ultra',  threads: 60, fbmOctaves: 4, dprScale: 1.0,  targetFps: 60 },
+    { label: 'high',   threads: 45, fbmOctaves: 3, dprScale: 0.85, targetFps: 60 },
+    { label: 'medium', threads: 30, fbmOctaves: 3, dprScale: 0.7,  targetFps: 45 },
+    { label: 'low',    threads: 20, fbmOctaves: 2, dprScale: 0.5,  targetFps: 30 },
+]
+
+function detectInitialTier(isMobile: boolean): number {
+    if (isMobile) {
+        // Check for high-end mobile (high DPR + lots of cores)
+        const cores = navigator.hardwareConcurrency || 2
+        const dpr = window.devicePixelRatio || 1
+        const memoryGB = (navigator as { deviceMemory?: number }).deviceMemory || 2
+
+        if (cores >= 6 && dpr >= 3 && memoryGB >= 6) return 1  // high
+        if (cores >= 4 && dpr >= 2) return 2                     // medium
+        return 3                                                  // low
+    }
+
+    // Desktop detection
+    const cores = navigator.hardwareConcurrency || 4
+    const dpr = window.devicePixelRatio || 1
+    const memoryGB = (navigator as { deviceMemory?: number }).deviceMemory || 8
+    const screenPixels = window.screen.width * window.screen.height
+
+    if (cores >= 8 && dpr >= 2 && memoryGB >= 8 && screenPixels >= 2073600) return 0  // ultra (1080p+)
+    if (cores >= 4 && memoryGB >= 4) return 1  // high
+    return 2                                    // medium
+}
+
+// Generate fragment shader with baked-in quality constants
+function generateFragmentShader(threads: number, fbmOctaves: number): string {
+    return `
     precision highp float;
-    
+
     uniform vec2 u_resolution;
     uniform float u_time;
     uniform vec2 u_mouse;
     uniform float u_clickTime;
     uniform vec2 u_clickPos;
-    
+
     #define PI 3.14159265359
-    #define NUM_THREADS 40.0
-    
+    #define NUM_THREADS ${threads}.0
+
     // 2D Simplex Noise
     vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-    
+
     float snoise(vec2 v) {
         const vec4 C = vec4(0.211324865405187, 0.366025403784439,
                            -0.577350269189626, 0.024390243902439);
@@ -52,30 +92,30 @@ const fragmentShaderSource = `
         g.yz = a0.yz * x12.xz + h.yz * x12.yw;
         return 130.0 * dot(m, g);
     }
-    
-    // Fractal noise for organic movement
+
+    // Fractal noise — octave count baked in
     float fbm(vec2 p) {
         float value = 0.0;
         float amplitude = 0.5;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < ${fbmOctaves}; i++) {
             value += amplitude * snoise(p);
             p *= 2.0;
             amplitude *= 0.5;
         }
         return value;
     }
-    
+
     void main() {
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         vec2 p = uv * 2.0 - 1.0;
         p.x *= u_resolution.x / u_resolution.y;
-        
+
         float t = u_time * 0.4;
-        
+
         // Mouse position
         vec2 mouse = u_mouse * 2.0 - 1.0;
         mouse.x *= u_resolution.x / u_resolution.y;
-        
+
         // Click ripple
         float clickAge = u_time - u_clickTime;
         vec2 clickPos = u_clickPos * 2.0 - 1.0;
@@ -83,128 +123,118 @@ const fragmentShaderSource = `
         float clickDist = length(p - clickPos);
         float ripple = sin(clickDist * 20.0 - clickAge * 8.0) * exp(-clickAge * 2.0) * exp(-clickDist * 2.0);
         ripple = max(0.0, ripple) * step(0.0, 5.0 - clickAge);
-        
+
         // Base color - near black
-        vec3 baseColor = vec3(0.02, 0.02, 0.02);
-        vec3 color = baseColor;
-        
+        vec3 color = vec3(0.02, 0.02, 0.02);
+
         // Color palette
-        vec3 sapphire = vec3(0.118, 0.227, 0.541);  // #1E3A8A
-        vec3 cyan = vec3(0.133, 0.827, 0.933);      // #22D3EE
         vec3 white = vec3(0.9, 0.95, 1.0);
-        
+        vec3 brightSapphire = vec3(0.2, 0.35, 0.7);
+        vec3 brightCyan = vec3(0.2, 0.9, 1.0);
+
         // === FLOWING VERTICAL THREADS ===
         float threads = 0.0;
-        
+        vec3 threadColorAccum = vec3(0.0);
+
         for (float i = 0.0; i < NUM_THREADS; i++) {
-            // Thread base position (distributed across screen)
             float threadX = (i / NUM_THREADS) * 2.0 - 1.0;
             threadX *= u_resolution.x / u_resolution.y;
-            
-            // Add variation to each thread
+
             float seed = i * 0.1;
             float speed = 0.8 + sin(seed * 5.0) * 0.3;
             float amplitude = 0.08 + sin(seed * 7.0) * 0.04;
             float frequency = 3.0 + sin(seed * 11.0) * 1.5;
-            
+
             // Sine wave oscillation
             float wave = sin(p.y * frequency + t * speed + seed * 10.0) * amplitude;
-            
-            // Add simplex noise for organic non-repeating motion
+
+            // Organic noise offset
             float noiseOffset = fbm(vec2(p.y * 0.5 + seed, t * 0.3)) * 0.06;
-            
-            // Final thread X position
+
             float finalX = threadX + wave + noiseOffset;
-            
-            // === MOUSE DISTORTION FIELD ===
+
+            // === MOUSE DISTORTION ===
             vec2 threadPos = vec2(finalX, p.y);
             vec2 toMouse = threadPos - mouse;
             float mouseDist = length(toMouse);
-            
-            // Push threads away from mouse (distortion field)
-            float distortionRadius = 0.4;
-            float distortion = max(0.0, 1.0 - mouseDist / distortionRadius);
-            distortion = distortion * distortion * distortion; // Cubic falloff
-            vec2 push = normalize(toMouse + 0.001) * distortion * 0.15;
-            finalX += push.x;
-            
-            // Add click ripple distortion
+            float distortion = max(0.0, 1.0 - mouseDist / 0.4);
+            distortion = distortion * distortion * distortion;
+            finalX += normalize(toMouse + 0.001).x * distortion * 0.15;
+
+            // Click ripple distortion
             finalX += ripple * 0.03 * sin(i * 0.5);
-            
-            // Thread glow calculation
+
+            // Distance from pixel to thread
             float dist = abs(p.x - finalX);
-            
-            // Thread thickness (increased)
-            float thickness = 0.012 + sin(seed * 13.0) * 0.005;
-            
-            // Soft glow falloff (much brighter)
-            float glow = thickness / (dist + 0.001);
-            glow = pow(glow, 1.3) * 0.05;
-            
-            // Add slight variation in brightness along thread
+
+            // === Y-AXIS THICKNESS VARIATION ===
+            float baseThickness = 0.012 + sin(seed * 13.0) * 0.005;
+            float thicknessVar = 0.8 + 0.4 * sin(p.y * 3.0 + t * 0.5 + seed * 7.0);
+            float thickness = baseThickness * thicknessVar;
+
+            // === DUAL-LAYER GLOW (core + halo) ===
+            // Tight bright core with smoothstep AA
+            float core = smoothstep(thickness, thickness * 0.1, dist) * 0.6;
+            // Soft wide halo
+            float halo = (thickness * 2.5) / (dist + 0.002);
+            halo = pow(halo, 1.2) * 0.03;
+
+            float glow = core + halo;
+
+            // Brightness variation along thread
             float brightness = 0.7 + 0.3 * sin(p.y * 8.0 + t * 2.0 + seed * 5.0);
-            
-            // Mouse proximity brightening
+
+            // Mouse proximity boost
             float mouseBoost = exp(-mouseDist * 3.0) * 0.5;
-            
-            // Click pulse brightening
             float clickBoost = ripple * 2.0;
-            
+
             glow *= brightness * (1.0 + mouseBoost + clickBoost);
-            
+
+            // === PER-THREAD COLOR VARIATION ===
+            float threadHue = fract(seed * 3.7 + 0.2);
+            vec3 threadTint = mix(brightSapphire, brightCyan, threadHue);
+            // Some threads get a slight purple tint
+            threadTint = mix(threadTint, vec3(0.4, 0.2, 0.8), smoothstep(0.7, 1.0, sin(seed * 17.0)) * 0.3);
+
+            threadColorAccum += threadTint * glow;
             threads += glow;
         }
-        
-        // Apply thread colors - brighter gradient from sapphire to cyan
-        float colorMix = sin(t * 0.5 + p.y * 2.0) * 0.5 + 0.5;
-        vec3 brightSapphire = vec3(0.2, 0.35, 0.7);   // Brighter sapphire
-        vec3 brightCyan = vec3(0.2, 0.9, 1.0);        // Brighter cyan
-        vec3 threadColor = mix(brightSapphire, brightCyan, colorMix);
-        
-        // Add white highlights on brightest parts
-        vec3 finalThreadColor = mix(threadColor, white, smoothstep(0.3, 1.0, threads));
-        
-        color += finalThreadColor * threads * 1.5;
-        
+
+        // Add white highlights on the brightest parts
+        vec3 finalThreadColor = mix(threadColorAccum, white * threads, smoothstep(0.3, 1.0, threads));
+        color += finalThreadColor * 1.5;
+
         // === HORIZONTAL LIGHT BANDS ===
-        // Adds depth and variety
         float band1 = exp(-abs(p.y - 0.3 - sin(t * 0.3) * 0.1) * 4.0) * 0.08;
         float band2 = exp(-abs(p.y + 0.4 - cos(t * 0.25) * 0.1) * 5.0) * 0.06;
         color += brightCyan * band1;
         color += brightSapphire * band2;
-        
-        // === MOUSE GLOW (Enhanced) ===
-        float mouseDist = length(p - mouse);
-        float mouseGlow = exp(-mouseDist * 3.0) * 0.25;
-        float mouseRing = exp(-abs(mouseDist - 0.15) * 20.0) * 0.15;
+
+        // === MOUSE GLOW ===
+        float mDist = length(p - mouse);
+        float mouseGlow = exp(-mDist * 3.0) * 0.25;
+        float mouseRing = exp(-abs(mDist - 0.15) * 20.0) * 0.15;
         color += brightCyan * (mouseGlow + mouseRing);
-        
-        // === BLOOM EFFECT ===
-        // Soft overall glow based on brightness
-        float bloom = threads * 0.3;
-        color += brightCyan * bloom * 0.2;
-        
+
+        // === BLOOM ===
+        color += brightCyan * threads * 0.06;
+
         // === GRADIENT OVERLAY ===
-        // Subtle gradient from bottom to top
-        float gradient = uv.y * 0.08;
-        color += brightSapphire * gradient;
-        
-        // === VIGNETTE (Softer) ===
-        float vignette = 1.0 - length(p) * 0.25;
-        vignette = smoothstep(0.0, 1.0, vignette);
+        color += brightSapphire * uv.y * 0.08;
+
+        // === VIGNETTE ===
+        float vignette = smoothstep(0.0, 1.0, 1.0 - length(p) * 0.25);
         color *= vignette;
-        
-        // === FINAL COLOR GRADING ===
-        // Slight saturation boost
+
+        // === COLOR GRADING ===
         float luminance = dot(color, vec3(0.299, 0.587, 0.114));
         color = mix(vec3(luminance), color, 1.2);
-        
-        // Ensure we don't clip
+
         color = clamp(color, 0.0, 1.0);
-        
         gl_FragColor = vec4(color, 1.0);
     }
 `
+}
 
 function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
     const shader = gl.createShader(type)
@@ -251,14 +281,27 @@ export default function FluidBackground() {
         const canvas = canvasRef.current
         if (!canvas) return
 
-        const gl = canvas.getContext('webgl', { alpha: false, antialias: !isMobile })
+        // === DYNAMIC QUALITY DETECTION ===
+        let tierIndex = detectInitialTier(isMobile)
+        let currentTier = QUALITY_TIERS[tierIndex]
+
+        const gl = canvas.getContext('webgl', {
+            alpha: false,
+            antialias: tierIndex <= 1, // AA only on high/ultra
+            powerPreference: 'high-performance',
+        })
         if (!gl) return
 
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
-        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource)
-        if (!vertexShader || !fragmentShader) return
+        // Build shader for the detected quality tier
+        function buildProgram(tier: QualityTier) {
+            const fragSource = generateFragmentShader(tier.threads, tier.fbmOctaves)
+            const vs = createShader(gl!, gl!.VERTEX_SHADER, vertexShaderSource)
+            const fs = createShader(gl!, gl!.FRAGMENT_SHADER, fragSource)
+            if (!vs || !fs) return null
+            return createProgram(gl!, vs, fs)
+        }
 
-        const program = createProgram(gl, vertexShader, fragmentShader)
+        let program = buildProgram(currentTier)
         if (!program) return
 
         const positionBuffer = gl.createBuffer()
@@ -267,12 +310,21 @@ export default function FluidBackground() {
             -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1
         ]), gl.STATIC_DRAW)
 
-        const positionLocation = gl.getAttribLocation(program, 'a_position')
-        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
-        const timeLocation = gl.getUniformLocation(program, 'u_time')
-        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
-        const clickTimeLocation = gl.getUniformLocation(program, 'u_clickTime')
-        const clickPosLocation = gl.getUniformLocation(program, 'u_clickPos')
+        let positionLocation = gl.getAttribLocation(program, 'a_position')
+        let resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        let timeLocation = gl.getUniformLocation(program, 'u_time')
+        let mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+        let clickTimeLocation = gl.getUniformLocation(program, 'u_clickTime')
+        let clickPosLocation = gl.getUniformLocation(program, 'u_clickPos')
+
+        function applyResolution() {
+            const baseDpr = window.devicePixelRatio || 1
+            const dpr = Math.min(baseDpr * currentTier.dprScale, 3.0)
+            canvas!.width = window.innerWidth * dpr
+            canvas!.height = window.innerHeight * dpr
+            gl!.viewport(0, 0, canvas!.width, canvas!.height)
+        }
+        applyResolution()
 
         const handleMouseMove = (e: MouseEvent) => {
             mouseRef.current = {
@@ -298,7 +350,6 @@ export default function FluidBackground() {
                     x: touch.clientX / window.innerWidth,
                     y: 1.0 - touch.clientY / window.innerHeight
                 }
-                // Trigger click ripple on touch
                 clickRef.current = {
                     time: performance.now() / 1000,
                     x: touch.clientX / window.innerWidth,
@@ -311,37 +362,81 @@ export default function FluidBackground() {
         window.addEventListener('click', handleClick)
         window.addEventListener('touchmove', handleTouchMove, { passive: true })
         window.addEventListener('touchstart', handleTouchStart, { passive: true })
+        window.addEventListener('resize', applyResolution)
 
-        const resize = () => {
-            const dpr = isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5)
-            canvas.width = window.innerWidth * dpr
-            canvas.height = window.innerHeight * dpr
-            gl.viewport(0, 0, canvas.width, canvas.height)
-        }
-        resize()
-        window.addEventListener('resize', resize)
-
+        // === ADAPTIVE FPS MONITORING ===
         let animationId: number
         const startTime = performance.now()
+        let frameCount = 0
+        let lastFpsCheck = performance.now()
+        let hasDowngraded = false
+        const FPS_CHECK_INTERVAL = 2000 // Check every 2 seconds
+        const FPS_SAMPLES_BEFORE_ADAPT = 2 // Wait 2 checks (4 seconds) before downgrading
+        let lowFpsStreak = 0
 
-        const render = () => {
-            const time = (performance.now() - startTime) / 1000
+        // Frame throttle for low tier
+        let lastFrameTime = 0
+        const minFrameInterval = currentTier.targetFps < 60 ? (1000 / currentTier.targetFps) : 0
 
-            gl.useProgram(program)
-            gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
-            gl.uniform1f(timeLocation, time)
-            gl.uniform2f(mouseLocation, mouseRef.current.x, mouseRef.current.y)
-            gl.uniform1f(clickTimeLocation, clickRef.current.time - startTime / 1000)
-            gl.uniform2f(clickPosLocation, clickRef.current.x, clickRef.current.y)
-
-            gl.enableVertexAttribArray(positionLocation)
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
-            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
-            gl.drawArrays(gl.TRIANGLES, 0, 6)
-
+        const render = (now: number) => {
             animationId = requestAnimationFrame(render)
+
+            // Frame throttle for low-end devices
+            if (minFrameInterval > 0 && now - lastFrameTime < minFrameInterval) return
+            lastFrameTime = now
+
+            const time = (now - startTime) / 1000
+            frameCount++
+
+            // === FPS CHECK & AUTO-DOWNGRADE ===
+            if (!hasDowngraded && now - lastFpsCheck >= FPS_CHECK_INTERVAL) {
+                const elapsed = (now - lastFpsCheck) / 1000
+                const fps = frameCount / elapsed
+                frameCount = 0
+                lastFpsCheck = now
+
+                if (fps < currentTier.targetFps * 0.6) {
+                    lowFpsStreak++
+                    if (lowFpsStreak >= FPS_SAMPLES_BEFORE_ADAPT && tierIndex < QUALITY_TIERS.length - 1) {
+                        // Downgrade quality
+                        tierIndex++
+                        currentTier = QUALITY_TIERS[tierIndex]
+
+                        const newProgram = buildProgram(currentTier)
+                        if (newProgram) {
+                            gl!.deleteProgram(program)
+                            program = newProgram
+                            positionLocation = gl!.getAttribLocation(program, 'a_position')
+                            resolutionLocation = gl!.getUniformLocation(program, 'u_resolution')
+                            timeLocation = gl!.getUniformLocation(program, 'u_time')
+                            mouseLocation = gl!.getUniformLocation(program, 'u_mouse')
+                            clickTimeLocation = gl!.getUniformLocation(program, 'u_clickTime')
+                            clickPosLocation = gl!.getUniformLocation(program, 'u_clickPos')
+                            applyResolution()
+                        }
+
+                        lowFpsStreak = 0
+                        // Allow one more downgrade attempt
+                        if (tierIndex >= QUALITY_TIERS.length - 1) hasDowngraded = true
+                    }
+                } else {
+                    lowFpsStreak = 0
+                }
+            }
+
+            gl!.useProgram(program)
+            gl!.uniform2f(resolutionLocation, canvas!.width, canvas!.height)
+            gl!.uniform1f(timeLocation, time)
+            gl!.uniform2f(mouseLocation, mouseRef.current.x, mouseRef.current.y)
+            gl!.uniform1f(clickTimeLocation, clickRef.current.time - startTime / 1000)
+            gl!.uniform2f(clickPosLocation, clickRef.current.x, clickRef.current.y)
+
+            gl!.enableVertexAttribArray(positionLocation)
+            gl!.bindBuffer(gl!.ARRAY_BUFFER, positionBuffer)
+            gl!.vertexAttribPointer(positionLocation, 2, gl!.FLOAT, false, 0, 0)
+            gl!.drawArrays(gl!.TRIANGLES, 0, 6)
         }
-        render()
+        animationId = requestAnimationFrame(render)
 
         return () => {
             cancelAnimationFrame(animationId)
@@ -349,10 +444,8 @@ export default function FluidBackground() {
             window.removeEventListener('click', handleClick)
             window.removeEventListener('touchmove', handleTouchMove)
             window.removeEventListener('touchstart', handleTouchStart)
-            window.removeEventListener('resize', resize)
+            window.removeEventListener('resize', applyResolution)
             gl.deleteProgram(program)
-            gl.deleteShader(vertexShader)
-            gl.deleteShader(fragmentShader)
         }
     }, [isMobile, handleClick])
 
