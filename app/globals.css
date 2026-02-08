@@ -14,13 +14,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   background: #050505;
   color: #fafafa;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
-  overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

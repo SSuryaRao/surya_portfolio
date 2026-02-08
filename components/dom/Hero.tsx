@@ -5,7 +5,7 @@ export default function Hero() {
 
             <div className="z-10 text-left pointer-events-auto max-w-3xl">
                 {/* Subtle backdrop for text readability */}
-                <div className="absolute inset-0 -left-8 -right-8 -top-8 -bottom-8 bg-gradient-to-r from-black/60 via-black/30 to-transparent rounded-3xl blur-xl -z-10"></div>
+                <div className="absolute inset-0 -top-8 -bottom-8 bg-gradient-to-r from-black/60 via-black/30 to-transparent rounded-3xl blur-xl -z-10"></div>
 
                 {/* Headline */}
                 <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white mb-6 md:mb-8 leading-[0.95] tracking-tighter drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
