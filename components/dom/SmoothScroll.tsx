@@ -17,6 +17,13 @@ function LenisGSAPSync() {
   lenisRef.current = useLenis()
 
   useEffect(() => {
+    // Disable browser scroll restoration so the page always starts at top
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
+    window.scrollTo(0, 0)
+    lenisRef.current?.scrollTo(0, { immediate: true })
+
     function update(time: number) {
       lenisRef.current?.raf(time * 1000)
     }
@@ -43,7 +50,7 @@ function LenisGSAPSync() {
 
 export function SmoothScroll({ children }: SmoothScrollProps) {
   return (
-    <ReactLenis root>
+    <ReactLenis root options={{ lerp: 0.07, wheelMultiplier: 0.9, touchMultiplier: 1.5 }}>
       <LenisGSAPSync />
       {children}
     </ReactLenis>
