@@ -21,7 +21,7 @@ export function useScrollReveal(options: ScrollRevealOptions = {}) {
     useEffect(() => {
         if (!ref.current) return
 
-        const { y = 40, x = 0, duration = 0.8, delay = 0, stagger = 0, start = 'top 85%' } = options
+        const { y = 30, x = 0, duration = 0.6, delay = 0, stagger = 0, start = 'top 95%' } = options
 
         // Small delay to ensure Lenis and ScrollTrigger are synced
         const timer = setTimeout(() => {
