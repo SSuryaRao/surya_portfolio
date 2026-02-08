@@ -14,12 +14,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-html,
-body {
-  overflow-x: hidden;
+html {
+  overflow-x: clip;
 }
 
 body {
+  overflow-x: clip;
   background: #050505;
   color: #fafafa;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
