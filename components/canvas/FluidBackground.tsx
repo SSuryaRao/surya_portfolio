@@ -345,12 +345,27 @@ export default function FluidBackground() {
 
         // Frame throttle for low tier
         let lastFrameTime = 0
-        const minFrameInterval = currentTier.targetFps < 60 ? (1000 / currentTier.targetFps) : 0
+        const baseMinFrameInterval = currentTier.targetFps < 60 ? (1000 / currentTier.targetFps) : 0
+        const throttledInterval = 1000 / 5 // 5fps when background not visible
+
+        // === VISIBILITY-BASED THROTTLING ===
+        let heroVisible = true
+        const heroEl = document.getElementById('home')
+        let observer: IntersectionObserver | null = null
+
+        if (heroEl) {
+            observer = new IntersectionObserver(
+                ([entry]) => { heroVisible = entry.isIntersecting },
+                { threshold: 0 } // triggers when any part enters/leaves viewport
+            )
+            observer.observe(heroEl)
+        }
 
         const render = (now: number) => {
             animationId = requestAnimationFrame(render)
 
-            // Frame throttle for low-end devices
+            // Use heavy throttle when hero is off-screen (background mostly hidden)
+            const minFrameInterval = heroVisible ? baseMinFrameInterval : throttledInterval
             if (minFrameInterval > 0 && now - lastFrameTime < minFrameInterval) return
             lastFrameTime = now
 
@@ -372,6 +387,7 @@ export default function FluidBackground() {
 
         return () => {
             cancelAnimationFrame(animationId)
+            if (observer) observer.disconnect()
             if (!isMobile) {
                 window.removeEventListener('mousemove', handleMouseMove)
                 window.removeEventListener('click', handleClick)
