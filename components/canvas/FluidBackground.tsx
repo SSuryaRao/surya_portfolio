@@ -20,34 +20,37 @@ interface QualityTier {
     targetFps: number
 }
 
-const QUALITY_TIERS: QualityTier[] = [
+const DESKTOP_TIERS: QualityTier[] = [
     { label: 'ultra',  threads: 60, fbmOctaves: 4, dprScale: 1.0,  targetFps: 60 },
     { label: 'high',   threads: 45, fbmOctaves: 3, dprScale: 0.85, targetFps: 60 },
     { label: 'medium', threads: 30, fbmOctaves: 3, dprScale: 0.7,  targetFps: 45 },
-    { label: 'low',    threads: 20, fbmOctaves: 2, dprScale: 0.5,  targetFps: 30 },
 ]
 
-function detectInitialTier(isMobile: boolean): number {
+const MOBILE_TIERS: QualityTier[] = [
+    { label: 'high',   threads: 20, fbmOctaves: 3, dprScale: 0.7,  targetFps: 60 },
+    { label: 'medium', threads: 15, fbmOctaves: 2, dprScale: 0.5,  targetFps: 45 },
+    { label: 'low',    threads: 10, fbmOctaves: 2, dprScale: 0.5,  targetFps: 30 },
+]
+
+function detectInitialTier(isMobile: boolean): { tier: QualityTier, tiers: QualityTier[] } {
     if (isMobile) {
-        // Check for high-end mobile (high DPR + lots of cores)
         const cores = navigator.hardwareConcurrency || 2
         const dpr = window.devicePixelRatio || 1
         const memoryGB = (navigator as { deviceMemory?: number }).deviceMemory || 2
 
-        if (cores >= 6 && dpr >= 3 && memoryGB >= 6) return 1  // high
-        if (cores >= 4 && dpr >= 2) return 2                     // medium
-        return 3                                                  // low
+        if (cores >= 6 && dpr >= 3 && memoryGB >= 6) return { tier: MOBILE_TIERS[0], tiers: MOBILE_TIERS }
+        if (cores >= 4 && dpr >= 2) return { tier: MOBILE_TIERS[1], tiers: MOBILE_TIERS }
+        return { tier: MOBILE_TIERS[2], tiers: MOBILE_TIERS }
     }
 
-    // Desktop detection
     const cores = navigator.hardwareConcurrency || 4
     const dpr = window.devicePixelRatio || 1
     const memoryGB = (navigator as { deviceMemory?: number }).deviceMemory || 8
     const screenPixels = window.screen.width * window.screen.height
 
-    if (cores >= 8 && dpr >= 2 && memoryGB >= 8 && screenPixels >= 2073600) return 0  // ultra (1080p+)
-    if (cores >= 4 && memoryGB >= 4) return 1  // high
-    return 2                                    // medium
+    if (cores >= 8 && dpr >= 2 && memoryGB >= 8 && screenPixels >= 2073600) return { tier: DESKTOP_TIERS[0], tiers: DESKTOP_TIERS }
+    if (cores >= 4 && memoryGB >= 4) return { tier: DESKTOP_TIERS[1], tiers: DESKTOP_TIERS }
+    return { tier: DESKTOP_TIERS[2], tiers: DESKTOP_TIERS }
 }
 
 // Generate fragment shader with baked-in quality constants
@@ -282,12 +285,11 @@ export default function FluidBackground() {
         if (!canvas) return
 
         // === QUALITY DETECTION (once on load, locked in) ===
-        const tierIndex = detectInitialTier(isMobile)
-        const currentTier = QUALITY_TIERS[tierIndex]
+        const { tier: currentTier } = detectInitialTier(isMobile)
 
         const gl = canvas.getContext('webgl', {
             alpha: false,
-            antialias: tierIndex <= 1, // AA only on high/ultra
+            antialias: currentTier.label === 'ultra' || currentTier.label === 'high',
             powerPreference: 'high-performance',
         })
         if (!gl) return
