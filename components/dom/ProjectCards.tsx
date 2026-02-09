@@ -1,24 +1,9 @@
 'use client'
 
-import { ExternalLink, Github, Bot, GraduationCap, Gamepad2 } from 'lucide-react'
+import { ExternalLink, Github, GraduationCap, Gamepad2 } from 'lucide-react'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 
 const projects = [
-    {
-        title: 'CareerCraft AI',
-        description: 'AI-powered career guidance platform for Indian students. Get personalized career roadmaps, skill gap analysis, and expert mentorship tailored for the Indian job market.',
-        tags: [
-            { label: 'Next.js', colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
-            { label: 'OpenAI API', colorClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
-            { label: 'PWA', colorClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-        ],
-        icon: <Bot className="w-16 h-16 text-white/20" />,
-        accentFrom: 'from-purple-600/20',
-        accentTo: 'to-cyan-600/20',
-        hoverBorder: 'hover:border-purple-500/50',
-        liveUrl: 'https://careercraft-frontend-1030709276859.us-central1.run.app/',
-        githubUrl: '',
-    },
     {
         title: 'Digital Guidance Platform',
         description: 'A one-stop tailored guidance platform for students — aptitude quizzes, course recommendations, college search with nearby government institutions, and deadline tracking for admissions and scholarships. Built for SIH 2025.',
