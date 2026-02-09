@@ -56,85 +56,98 @@ export default function Navbar() {
     }
 
     return (
-        <nav
-            className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${
-                isHidden ? '-translate-y-full' : 'translate-y-0'
-            }`}
-        >
-            <div className="mx-4 md:mx-8 mt-4">
-                <div className="glass-nav px-4 md:px-6 py-3">
-                    <div className="max-w-6xl mx-auto flex items-center justify-between">
-                        {/* Logo */}
-                        <button
-                            onClick={() => handleNavClick('#home')}
-                            className="text-lg font-black tracking-tighter text-gradient cursor-pointer"
-                        >
-                            SURYA
-                        </button>
+        <>
+            {/* Skip to content link for accessibility */}
+            <a
+                href="#home"
+                className="skip-link"
+                onClick={(e) => {
+                    e.preventDefault()
+                    handleNavClick('#home')
+                }}
+            >
+                Skip to main content
+            </a>
 
-                        {/* Desktop Nav Links */}
-                        <div className="hidden md:flex items-center gap-8">
-                            {navLinks.map((link) => (
-                                <button
-                                    key={link.href}
-                                    onClick={() => handleNavClick(link.href)}
-                                    className={`text-sm font-medium transition-colors duration-300 cursor-pointer ${
-                                        activeSection === link.href.slice(1)
+            <nav
+                className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${isHidden ? '-translate-y-full' : 'translate-y-0'
+                    }`}
+                role="navigation"
+                aria-label="Main navigation"
+            >
+                <div className="mx-4 md:mx-8 mt-4">
+                    <div className="glass-nav px-4 md:px-6 py-3">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between">
+                            {/* Logo */}
+                            <button
+                                onClick={() => handleNavClick('#home')}
+                                className="text-lg font-black tracking-tighter text-gradient cursor-pointer"
+                            >
+                                SURYA
+                            </button>
+
+                            {/* Desktop Nav Links */}
+                            <div className="hidden md:flex items-center gap-8">
+                                {navLinks.map((link) => (
+                                    <button
+                                        key={link.href}
+                                        onClick={() => handleNavClick(link.href)}
+                                        className={`text-sm font-medium transition-colors duration-300 cursor-pointer ${activeSection === link.href.slice(1)
                                             ? 'text-cyan-400'
                                             : 'text-gray-400 hover:text-white'
-                                    }`}
-                                >
-                                    {link.label}
-                                </button>
-                            ))}
-                        </div>
+                                            }`}
+                                    >
+                                        {link.label}
+                                    </button>
+                                ))}
+                            </div>
 
-                        {/* Desktop CTA */}
-                        <button
-                            onClick={() => handleNavClick('#contact')}
-                            className="hidden md:block btn-glow !px-5 !py-2.5 !text-sm cursor-pointer"
-                        >
-                            Let&apos;s Talk
-                        </button>
-
-                        {/* Mobile Hamburger */}
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden text-white p-2 cursor-pointer"
-                            aria-label="Toggle menu"
-                        >
-                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Mobile Menu */}
-                {isMobileMenuOpen && (
-                    <div className="md:hidden glass-card mt-2 py-4 px-6">
-                        <div className="flex flex-col gap-4">
-                            {navLinks.map((link) => (
-                                <button
-                                    key={link.href}
-                                    onClick={() => handleNavClick(link.href)}
-                                    className={`text-sm font-medium text-left transition-colors duration-300 cursor-pointer ${
-                                        activeSection === link.href.slice(1)
-                                            ? 'text-cyan-400'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
-                                >
-                                    {link.label}
-                                </button>
-                            ))}
+                            {/* Desktop CTA */}
                             <button
                                 onClick={() => handleNavClick('#contact')}
-                                className="btn-glow !px-5 !py-2.5 !text-sm text-center mt-2 cursor-pointer"
+                                className="hidden md:block btn-glow !px-5 !py-2.5 !text-sm cursor-pointer"
                             >
                                 Let&apos;s Talk
                             </button>
+
+                            {/* Mobile Hamburger */}
+                            <button
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="md:hidden text-white p-2 cursor-pointer"
+                                aria-label="Toggle menu"
+                            >
+                                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            </button>
                         </div>
                     </div>
-                )}
-            </div>
-        </nav>
+
+                    {/* Mobile Menu */}
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden glass-card mt-2 py-4 px-6">
+                            <div className="flex flex-col gap-4">
+                                {navLinks.map((link) => (
+                                    <button
+                                        key={link.href}
+                                        onClick={() => handleNavClick(link.href)}
+                                        className={`text-sm font-medium text-left transition-colors duration-300 cursor-pointer ${activeSection === link.href.slice(1)
+                                            ? 'text-cyan-400'
+                                            : 'text-gray-400 hover:text-white'
+                                            }`}
+                                    >
+                                        {link.label}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleNavClick('#contact')}
+                                    className="btn-glow !px-5 !py-2.5 !text-sm text-center mt-2 cursor-pointer"
+                                >
+                                    Let&apos;s Talk
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </nav>
+        </>
     )
 }

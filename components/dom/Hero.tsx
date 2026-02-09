@@ -1,19 +1,29 @@
+'use client'
+
+import { useParallax } from '@/hooks/useParallax'
+
 export default function Hero() {
+    const headlineRef = useParallax({ speed: 0.15, direction: 'up' })
+
     return (
         <section id="home" className="relative w-full min-h-screen flex flex-col items-start justify-center px-6 md:px-20 lg:px-32 pointer-events-none py-20">
 
+            {/* Mobile overlay to reduce WebGL brightness - stronger on mobile, fades on desktop */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 md:from-transparent md:via-transparent md:to-transparent pointer-events-none z-[1]"></div>
 
             <div className="z-10 text-left pointer-events-auto max-w-3xl">
                 {/* Subtle backdrop for text readability */}
                 <div className="absolute inset-0 -top-8 -bottom-8 bg-gradient-to-r from-black/60 via-black/30 to-transparent rounded-3xl blur-xl -z-10"></div>
 
-                {/* Headline */}
-                <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white mb-6 md:mb-8 leading-[0.95] tracking-tighter drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
-                    Turn Ideas Into <br />
-                    <span className="text-gradient drop-shadow-[0_4px_30px_rgba(34,211,238,0.5)]">
-                        Digital Reality.
-                    </span>
-                </h1>
+                {/* Headline with parallax */}
+                <div ref={headlineRef}>
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white mb-6 md:mb-8 leading-[0.95] tracking-tighter drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+                        Turn Ideas Into <br />
+                        <span className="text-gradient drop-shadow-[0_4px_30px_rgba(34,211,238,0.5)]">
+                            Digital Reality.
+                        </span>
+                    </h1>
+                </div>
 
                 {/* Subheadline */}
                 <p className="text-base md:text-xl text-white/90 font-medium mb-8 md:mb-12 max-w-xl leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
@@ -46,3 +56,4 @@ export default function Hero() {
         </section>
     )
 }
+

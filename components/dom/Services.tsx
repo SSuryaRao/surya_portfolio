@@ -1,4 +1,10 @@
+'use client'
+
+import { useScrollReveal } from '@/hooks/useScrollReveal'
+
 export default function Services() {
+    const sectionRef = useScrollReveal({ y: 50, stagger: 0.15 })
+
     const services = [
         {
             title: "Custom Web Development",
@@ -34,7 +40,7 @@ export default function Services() {
 
     return (
         <section id="services" className="w-full py-16 md:py-24 px-4 md:px-8 relative pointer-events-auto bg-black/40 backdrop-blur-sm">
-            <div className="max-w-6xl mx-auto">
+            <div ref={sectionRef} className="max-w-6xl mx-auto">
                 <h2 className="text-3xl md:text-5xl font-bold text-center text-white mb-4 tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
                     Services
                 </h2>
@@ -43,7 +49,7 @@ export default function Services() {
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {services.map((service, index) => (
-                        <div key={index} className={`group relative p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden ${service.hoverBorder} transition-all duration-500 transform hover:-translate-y-2`}>
+                        <div key={index} data-reveal className={`group relative p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden ${service.hoverBorder} transition-all duration-500 transform hover:-translate-y-2`}>
                             <div className={`absolute inset-0 bg-gradient-to-br ${service.gradientFrom} ${service.gradientTo} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                             <div className="mb-6 p-4 bg-white/5 rounded-2xl inline-block group-hover:scale-110 transition-transform duration-300 relative z-10">
                                 {service.icon}
@@ -59,3 +65,4 @@ export default function Services() {
         </section>
     )
 }
+

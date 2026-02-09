@@ -1,7 +1,13 @@
+'use client'
+
+import { useScrollReveal } from '@/hooks/useScrollReveal'
+
 export default function TrustSection() {
+    const sectionRef = useScrollReveal({ y: 40 })
+
     return (
         <section className="w-full py-12 md:py-20 px-4 md:px-8 flex justify-center pointer-events-none">
-            <div className="pointer-events-auto max-w-5xl w-full group relative p-6 md:p-10 lg:p-14 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-cyan-500/50 transition-all duration-500 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+            <div ref={sectionRef} className="pointer-events-auto max-w-5xl w-full group relative p-6 md:p-10 lg:p-14 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-cyan-500/50 transition-all duration-500 flex flex-col md:flex-row items-center gap-6 md:gap-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="flex-1 relative z-10">

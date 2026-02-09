@@ -10,10 +10,12 @@ import Contact from '@/components/dom/Contact'
 import Footer from '@/components/dom/Footer'
 import ScrollToTop from '@/components/dom/ScrollToTop'
 import Preloader from '@/components/dom/Preloader'
+import CustomCursor from '@/components/dom/CustomCursor'
 
 export default function Home() {
   return (
     <main className="relative w-full">
+      <CustomCursor />
       <Preloader />
       <FluidBackground />
       <Navbar />

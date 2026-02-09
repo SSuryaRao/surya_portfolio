@@ -1,6 +1,5 @@
 'use client'
 
-import { User } from 'lucide-react'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 
 const skillCategories = [
@@ -41,10 +40,6 @@ export default function About() {
                     {/* Left: Bio */}
                     <div className="lg:col-span-2">
                         <div className="glass-card p-6 md:p-8 flex flex-col gap-6">
-                            {/* Photo Placeholder */}
-                            <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-[#1E3A8A]/20 to-[#22D3EE]/20 border border-white/10 flex items-center justify-center max-w-[240px] mx-auto">
-                                <User className="w-20 h-20 text-white/20" />
-                            </div>
 
                             <p className="text-gray-300 leading-relaxed text-sm md:text-base">
                                 I&apos;m a full-stack developer from Odisha, India, specializing in crafting high-performance web applications with modern technologies. From interactive WebGL experiences to AI-powered tools, I bring ideas to life with clean code and creative solutions.
