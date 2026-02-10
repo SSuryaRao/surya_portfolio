@@ -1,21 +1,12 @@
 'use client'
 
 import { useLenis } from 'lenis/react'
-import { Github, Linkedin, Twitter, Mail } from 'lucide-react'
-
-const footerLinks = [
-    { label: 'Home', href: '#home' },
-    { label: 'About', href: '#about' },
-    { label: 'Services', href: '#services' },
-    { label: 'Projects', href: '#projects' },
-    { label: 'Contact', href: '#contact' },
-]
+import { Github, Mail } from 'lucide-react'
+import { NAV_LINKS, SITE } from '@/lib/constants'
 
 const socialLinks = [
-    { icon: <Github className="w-4 h-4" />, href: '#', label: 'GitHub' },
-    { icon: <Linkedin className="w-4 h-4" />, href: '#', label: 'LinkedIn' },
-    { icon: <Twitter className="w-4 h-4" />, href: '#', label: 'Twitter' },
-    { icon: <Mail className="w-4 h-4" />, href: '#', label: 'Email' },
+    { icon: <Github className="w-4 h-4" />, href: SITE.github, label: 'GitHub' },
+    { icon: <Mail className="w-4 h-4" />, href: `mailto:${SITE.email}`, label: 'Email' },
 ]
 
 export default function Footer() {
@@ -55,7 +46,7 @@ export default function Footer() {
                     <div>
                         <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Navigation</h4>
                         <div className="flex flex-col gap-3">
-                            {footerLinks.map((link) => (
+                            {NAV_LINKS.map((link) => (
                                 <button
                                     key={link.href}
                                     onClick={() => handleNavClick(link.href)}
@@ -71,7 +62,7 @@ export default function Footer() {
                     <div>
                         <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Get In Touch</h4>
                         <div className="flex flex-col gap-3">
-                            <p className="text-sm text-gray-400">hello@surya.dev</p>
+                            <a href={`mailto:${SITE.email}`} className="text-sm text-gray-400 hover:text-white transition-colors">{SITE.email}</a>
                             <p className="text-sm text-gray-400">Odisha, India</p>
                         </div>
                     </div>

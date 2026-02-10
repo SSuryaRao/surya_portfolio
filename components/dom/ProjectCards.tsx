@@ -1,39 +1,14 @@
 'use client'
 
+import React from 'react'
 import { ExternalLink, Github, GraduationCap, Gamepad2 } from 'lucide-react'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { PROJECTS } from '@/lib/constants'
 
-const projects = [
-    {
-        title: 'Digital Guidance Platform',
-        description: 'A one-stop tailored guidance platform for students — aptitude quizzes, course recommendations, college search with nearby government institutions, and deadline tracking for admissions and scholarships. Built for SIH 2025.',
-        tags: [
-            { label: 'Next.js', colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-            { label: 'SIH 2025', colorClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-        ],
-        icon: <GraduationCap className="w-16 h-16 text-white/20" />,
-        accentFrom: 'from-blue-600/20',
-        accentTo: 'to-emerald-600/20',
-        hoverBorder: 'hover:border-blue-500/50',
-        liveUrl: 'https://sih-2025-indol.vercel.app/',
-        githubUrl: '',
-    },
-    {
-        title: 'BGMI Store',
-        description: 'A digital marketplace for premium BGMI gaming assets. Buy UC, battle passes, elite passes, and exclusive skins with instant delivery, verified sellers, and 24/7 support.',
-        tags: [
-            { label: 'Next.js', colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
-            { label: 'Tailwind CSS', colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-            { label: 'Auth', colorClass: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-        ],
-        icon: <Gamepad2 className="w-16 h-16 text-white/20" />,
-        accentFrom: 'from-orange-600/20',
-        accentTo: 'to-red-600/20',
-        hoverBorder: 'hover:border-orange-500/50',
-        liveUrl: 'https://bgmistore.vercel.app/',
-        githubUrl: '',
-    },
-]
+const PROJECT_ICONS: Record<string, React.ReactNode> = {
+    graduation: <GraduationCap className="w-16 h-16 text-white/20" />,
+    gamepad: <Gamepad2 className="w-16 h-16 text-white/20" />,
+}
 
 export default function ProjectCards() {
     const sectionRef = useScrollReveal({ y: 50, stagger: 0.2 })
@@ -49,7 +24,7 @@ export default function ProjectCards() {
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                    {projects.map((project) => (
+                    {PROJECTS.map((project) => (
                         <div
                             key={project.title}
                             data-reveal
@@ -57,7 +32,7 @@ export default function ProjectCards() {
                         >
                             {/* Image Placeholder */}
                             <div className={`aspect-video w-full bg-gradient-to-br ${project.accentFrom} ${project.accentTo} flex items-center justify-center border-b border-white/5 group-hover:scale-105 transition-transform duration-500 overflow-hidden`}>
-                                {project.icon}
+                                {PROJECT_ICONS[project.iconId]}
                             </div>
 
                             {/* Content */}

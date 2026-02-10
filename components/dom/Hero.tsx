@@ -1,9 +1,15 @@
 'use client'
 
 import { useParallax } from '@/hooks/useParallax'
+import { useLenis } from 'lenis/react'
 
 export default function Hero() {
     const headlineRef = useParallax({ speed: 0.15, direction: 'up' })
+    const lenis = useLenis()
+
+    const handleScroll = (href: string) => {
+        lenis?.scrollTo(href, { offset: -80 })
+    }
 
     return (
         <section id="home" className="relative w-full min-h-screen flex flex-col items-start justify-center px-6 md:px-20 lg:px-32 pointer-events-none py-20">
@@ -32,21 +38,27 @@ export default function Hero() {
 
                 {/* Call to Actions */}
                 <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    <a href="#contact" className="btn-glow flex items-center gap-3 shadow-xl shadow-cyan-500/30">
+                    <button
+                        onClick={() => handleScroll('#contact')}
+                        className="btn-glow flex items-center gap-3 shadow-xl shadow-cyan-500/30 cursor-pointer"
+                    >
                         Start Your Project
-                        <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>
-                    </a>
+                    </button>
 
-                    <a href="#services" className="btn-secondary shadow-lg shadow-black/30">
+                    <button
+                        onClick={() => handleScroll('#services')}
+                        className="btn-secondary shadow-lg shadow-black/30 cursor-pointer"
+                    >
                         View Services
-                    </a>
+                    </button>
                 </div>
 
                 {/* Tech Stack */}
                 <div className="mt-10 md:mt-16 flex gap-4 md:gap-8 text-white/70 text-xs font-mono tracking-[0.2em] uppercase drop-shadow-lg flex-wrap">
-                    <span>Next.js 15</span>
+                    <span>Next.js 16</span>
                     <span className="text-white/40">•</span>
                     <span>WebGL</span>
                     <span className="text-white/40">•</span>
@@ -56,4 +68,3 @@ export default function Hero() {
         </section>
     )
 }
-

@@ -284,6 +284,13 @@ export default function FluidBackground() {
         const canvas = canvasRef.current
         if (!canvas) return
 
+        // Respect prefers-reduced-motion — show static gradient instead
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+        if (reducedMotion.matches) {
+            canvas.style.background = 'linear-gradient(135deg, #050505 0%, #0a1428 50%, #050505 100%)'
+            return
+        }
+
         // === QUALITY DETECTION (once on load, locked in) ===
         const { tier: currentTier } = detectInitialTier(isMobile)
 
@@ -292,7 +299,11 @@ export default function FluidBackground() {
             antialias: currentTier.label === 'ultra' || currentTier.label === 'high',
             powerPreference: 'high-performance',
         })
-        if (!gl) return
+        if (!gl) {
+            // WebGL not supported — show static gradient fallback
+            canvas.style.background = 'linear-gradient(135deg, #050505 0%, #0a1428 50%, #050505 100%)'
+            return
+        }
 
         const fragSource = generateFragmentShader(currentTier.threads, currentTier.fbmOctaves)
         const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)

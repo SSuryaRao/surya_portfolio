@@ -1,25 +1,19 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLenis } from 'lenis/react'
 import { Menu, X } from 'lucide-react'
-
-const navLinks = [
-    { label: 'Home', href: '#home' },
-    { label: 'About', href: '#about' },
-    { label: 'Services', href: '#services' },
-    { label: 'Projects', href: '#projects' },
-    { label: 'Contact', href: '#contact' },
-]
+import { NAV_LINKS } from '@/lib/constants'
 
 export default function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isHidden, setIsHidden] = useState(false)
     const [activeSection, setActiveSection] = useState('home')
     const lastScrollY = useRef(0)
+    const mobileMenuRef = useRef<HTMLDivElement>(null)
+    const hamburgerRef = useRef<HTMLButtonElement>(null)
 
     const lenis = useLenis(({ scroll }) => {
-        // Hide on scroll down, show on scroll up
         if (scroll > 100) {
             setIsHidden(scroll > lastScrollY.current)
         } else {
@@ -50,10 +44,58 @@ export default function Navbar() {
         return () => observer.disconnect()
     }, [])
 
-    const handleNavClick = (href: string) => {
+    // Close mobile menu on Escape key
+    useEffect(() => {
+        if (!isMobileMenuOpen) return
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsMobileMenuOpen(false)
+                hamburgerRef.current?.focus()
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [isMobileMenuOpen])
+
+    // Focus trap inside mobile menu
+    useEffect(() => {
+        if (!isMobileMenuOpen || !mobileMenuRef.current) return
+
+        const menu = mobileMenuRef.current
+        const focusableEls = menu.querySelectorAll<HTMLElement>('button, a, [tabindex]:not([tabindex="-1"])')
+        if (focusableEls.length === 0) return
+
+        const firstEl = focusableEls[0]
+        const lastEl = focusableEls[focusableEls.length - 1]
+
+        // Focus first item when menu opens
+        firstEl.focus()
+
+        const trapFocus = (e: KeyboardEvent) => {
+            if (e.key !== 'Tab') return
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstEl) {
+                    e.preventDefault()
+                    lastEl.focus()
+                }
+            } else {
+                if (document.activeElement === lastEl) {
+                    e.preventDefault()
+                    firstEl.focus()
+                }
+            }
+        }
+
+        menu.addEventListener('keydown', trapFocus)
+        return () => menu.removeEventListener('keydown', trapFocus)
+    }, [isMobileMenuOpen])
+
+    const handleNavClick = useCallback((href: string) => {
         setIsMobileMenuOpen(false)
         lenis?.scrollTo(href, { offset: -80 })
-    }
+    }, [lenis])
 
     return (
         <>
@@ -88,7 +130,7 @@ export default function Navbar() {
 
                             {/* Desktop Nav Links */}
                             <div className="hidden md:flex items-center gap-8">
-                                {navLinks.map((link) => (
+                                {NAV_LINKS.map((link) => (
                                     <button
                                         key={link.href}
                                         onClick={() => handleNavClick(link.href)}
@@ -112,9 +154,12 @@ export default function Navbar() {
 
                             {/* Mobile Hamburger */}
                             <button
+                                ref={hamburgerRef}
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                                 className="md:hidden text-white p-2 cursor-pointer"
-                                aria-label="Toggle menu"
+                                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                                aria-expanded={isMobileMenuOpen}
+                                aria-controls="mobile-menu"
                             >
                                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                             </button>
@@ -123,9 +168,15 @@ export default function Navbar() {
 
                     {/* Mobile Menu */}
                     {isMobileMenuOpen && (
-                        <div className="md:hidden glass-card mt-2 py-4 px-6">
+                        <div
+                            ref={mobileMenuRef}
+                            id="mobile-menu"
+                            role="dialog"
+                            aria-label="Mobile navigation menu"
+                            className="md:hidden glass-card mt-2 py-4 px-6"
+                        >
                             <div className="flex flex-col gap-4">
-                                {navLinks.map((link) => (
+                                {NAV_LINKS.map((link) => (
                                     <button
                                         key={link.href}
                                         onClick={() => handleNavClick(link.href)}
