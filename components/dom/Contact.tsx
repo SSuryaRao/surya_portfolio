@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { Mail, MapPin, Clock, Send, CheckCircle, Github, Linkedin, Twitter } from 'lucide-react'
+import { Mail, MapPin, Clock, Send, CheckCircle, Github, Linkedin, Twitter, MessageCircle } from 'lucide-react'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 
 export default function Contact() {
@@ -38,7 +38,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                                    <p className="text-white text-sm">hello@surya.dev</p>
+                                    <a href="mailto:suryadevprojects@gmail.com" className="text-white text-sm hover:text-cyan-400 transition-colors">suryadevprojects@gmail.com</a>
                                 </div>
                             </div>
 
@@ -61,7 +61,19 @@ export default function Contact() {
                                     <p className="text-white text-sm">Open to freelance & collaborations</p>
                                 </div>
                             </div>
+
                         </div>
+
+                        {/* Telegram CTA Button */}
+                        <a
+                            href="https://t.me/SuryaDev_AutoBot"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-center gap-3 w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 hover:border-cyan-400/60 hover:from-cyan-500/30 hover:to-blue-500/30 transition-all duration-300"
+                        >
+                            <MessageCircle className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                            <span className="text-white font-medium">Chat with Telegram Assistant</span>
+                        </a>
 
                         {/* Social Links */}
                         <div className="flex gap-3 mt-2">
