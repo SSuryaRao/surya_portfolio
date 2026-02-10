@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import gsap from 'gsap'
 
 export default function CustomCursor() {
@@ -10,37 +10,25 @@ export default function CustomCursor() {
     const [isHidden, setIsHidden] = useState(false)
     const [isTouchDevice, setIsTouchDevice] = useState(false)
 
-    useEffect(() => {
-        // Detect touch device
-        const checkTouch = () => {
-            setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
-        }
-        checkTouch()
+    const handleHoverEnter = useCallback(() => setIsHovering(true), [])
+    const handleHoverLeave = useCallback(() => setIsHovering(false), [])
 
-        if (isTouchDevice) return
+    useEffect(() => {
+        const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)')
+        const isTouch = !hoverQuery.matches
+        setIsTouchDevice(isTouch)
+
+        if (isTouch) return
 
         const cursor = cursorRef.current
         const cursorDot = cursorDotRef.current
         if (!cursor || !cursorDot) return
 
-        // Mouse position
-        let mouseX = 0
-        let mouseY = 0
-
         const onMouseMove = (e: MouseEvent) => {
-            mouseX = e.clientX
-            mouseY = e.clientY
-
-            // Instant dot movement
-            gsap.set(cursorDot, {
-                x: mouseX,
-                y: mouseY,
-            })
-
-            // Smooth ring follow
+            gsap.set(cursorDot, { x: e.clientX, y: e.clientY })
             gsap.to(cursor, {
-                x: mouseX,
-                y: mouseY,
+                x: e.clientX,
+                y: e.clientY,
                 duration: 0.5,
                 ease: 'power3.out',
             })
@@ -49,13 +37,17 @@ export default function CustomCursor() {
         const onMouseEnter = () => setIsHidden(false)
         const onMouseLeave = () => setIsHidden(true)
 
-        // Interactive element hover detection
-        const addHoverListeners = () => {
-            const interactiveElements = document.querySelectorAll('a, button, [role="button"], input, textarea, select, [data-cursor-hover]')
+        const trackedElements = new WeakSet<Element>()
 
+        const addHoverListeners = () => {
+            const interactiveElements = document.querySelectorAll(
+                'a, button, [role="button"], input, textarea, select, [data-cursor-hover]'
+            )
             interactiveElements.forEach((el) => {
-                el.addEventListener('mouseenter', () => setIsHovering(true))
-                el.addEventListener('mouseleave', () => setIsHovering(false))
+                if (trackedElements.has(el)) return
+                trackedElements.add(el)
+                el.addEventListener('mouseenter', handleHoverEnter)
+                el.addEventListener('mouseleave', handleHoverLeave)
             })
         }
 
@@ -63,11 +55,13 @@ export default function CustomCursor() {
         document.body.addEventListener('mouseenter', onMouseEnter)
         document.body.addEventListener('mouseleave', onMouseLeave)
 
-        // Add hover listeners after a short delay to ensure DOM is ready
         const timer = setTimeout(addHoverListeners, 500)
 
-        // Set up MutationObserver to handle dynamic content
-        const observer = new MutationObserver(addHoverListeners)
+        let mutationTimeout: ReturnType<typeof setTimeout>
+        const observer = new MutationObserver(() => {
+            clearTimeout(mutationTimeout)
+            mutationTimeout = setTimeout(addHoverListeners, 200)
+        })
         observer.observe(document.body, { childList: true, subtree: true })
 
         return () => {
@@ -75,27 +69,49 @@ export default function CustomCursor() {
             document.body.removeEventListener('mouseenter', onMouseEnter)
             document.body.removeEventListener('mouseleave', onMouseLeave)
             clearTimeout(timer)
+            clearTimeout(mutationTimeout)
             observer.disconnect()
+            document.querySelectorAll(
+                'a, button, [role="button"], input, textarea, select, [data-cursor-hover]'
+            ).forEach((el) => {
+                el.removeEventListener('mouseenter', handleHoverEnter)
+                el.removeEventListener('mouseleave', handleHoverLeave)
+            })
         }
-    }, [isTouchDevice])
+    }, [isTouchDevice, handleHoverEnter, handleHoverLeave])
 
     // Animate hover state changes
     useEffect(() => {
         if (isTouchDevice) return
         const cursor = cursorRef.current
-        if (!cursor) return
+        const cursorDot = cursorDotRef.current
+        if (!cursor || !cursorDot) return
 
         if (isHovering) {
             gsap.to(cursor, {
-                scale: 1.5,
-                borderColor: 'rgba(34, 211, 238, 0.8)',
+                scale: 1.6,
+                borderColor: 'rgba(34, 211, 238, 0.9)',
+                backgroundColor: 'rgba(34, 211, 238, 0.08)',
+                duration: 0.3,
+                ease: 'power2.out',
+            })
+            gsap.to(cursorDot, {
+                scale: 0.5,
+                backgroundColor: '#22D3EE',
                 duration: 0.3,
                 ease: 'power2.out',
             })
         } else {
             gsap.to(cursor, {
                 scale: 1,
-                borderColor: 'rgba(255, 255, 255, 0.5)',
+                borderColor: 'rgba(255, 255, 255, 0.6)',
+                backgroundColor: 'rgba(0, 0, 0, 0)',
+                duration: 0.3,
+                ease: 'power2.out',
+            })
+            gsap.to(cursorDot, {
+                scale: 1,
+                backgroundColor: '#ffffff',
                 duration: 0.3,
                 ease: 'power2.out',
             })
@@ -106,32 +122,34 @@ export default function CustomCursor() {
 
     return (
         <>
-            {/* Outer ring */}
+            {/* Outer ring — no blend mode, uses drop-shadow for visibility on any bg */}
             <div
                 ref={cursorRef}
-                className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference"
+                className="fixed top-0 left-0 pointer-events-none z-[9999]"
                 style={{
                     width: '40px',
                     height: '40px',
                     marginLeft: '-20px',
                     marginTop: '-20px',
                     borderRadius: '50%',
-                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    border: '2px solid rgba(255, 255, 255, 0.6)',
+                    filter: 'drop-shadow(0 0 4px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(34, 211, 238, 0.3))',
                     opacity: isHidden ? 0 : 1,
                     transition: 'opacity 0.3s ease',
                 }}
             />
-            {/* Inner dot */}
+            {/* Inner dot — solid with dark outline for contrast */}
             <div
                 ref={cursorDotRef}
-                className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference"
+                className="fixed top-0 left-0 pointer-events-none z-[9999]"
                 style={{
                     width: '8px',
                     height: '8px',
                     marginLeft: '-4px',
                     marginTop: '-4px',
                     borderRadius: '50%',
-                    backgroundColor: 'white',
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 0 0 1.5px rgba(0, 0, 0, 0.5), 0 0 6px rgba(34, 211, 238, 0.5)',
                     opacity: isHidden ? 0 : 1,
                     transition: 'opacity 0.3s ease',
                 }}

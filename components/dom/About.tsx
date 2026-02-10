@@ -1,27 +1,7 @@
 'use client'
 
 import { useScrollReveal } from '@/hooks/useScrollReveal'
-
-const skillCategories = [
-    {
-        label: 'Frontend',
-        skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'GSAP', 'Three.js'],
-    },
-    {
-        label: 'Backend',
-        skills: ['Node.js', 'Python', 'Supabase', 'PostgreSQL'],
-    },
-    {
-        label: 'AI & Tools',
-        skills: ['OpenAI', 'LangChain', 'Git', 'Figma', 'WebGL/GLSL'],
-    },
-]
-
-const stats = [
-    { value: '2+', label: 'Years Experience' },
-    { value: '10+', label: 'Projects' },
-    { value: '3', label: 'Awards' },
-]
+import { SKILL_CATEGORIES, STATS } from '@/lib/constants'
 
 export default function About() {
     const sectionRef = useScrollReveal({ y: 40 })
@@ -50,7 +30,7 @@ export default function About() {
 
                             {/* Stats */}
                             <div className="flex gap-6 mt-2 justify-center lg:justify-start">
-                                {stats.map((stat) => (
+                                {STATS.map((stat) => (
                                     <div key={stat.label} className="text-center">
                                         <div className="text-2xl md:text-3xl font-bold text-gradient">{stat.value}</div>
                                         <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">{stat.label}</div>
@@ -66,7 +46,7 @@ export default function About() {
                             <h3 className="text-xl font-semibold text-white mb-8">Tech Stack</h3>
 
                             <div className="flex flex-col gap-8">
-                                {skillCategories.map((category) => (
+                                {SKILL_CATEGORIES.map((category) => (
                                     <div key={category.label}>
                                         <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
                                             {category.label}

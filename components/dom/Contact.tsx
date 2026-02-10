@@ -1,17 +1,49 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { Mail, MapPin, Clock, Send, CheckCircle, Github, Linkedin, Twitter, MessageCircle } from 'lucide-react'
+import { Mail, MapPin, Clock, Send, CheckCircle, Github, MessageCircle, AlertCircle } from 'lucide-react'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
+
+interface FormErrors {
+    name?: string
+    email?: string
+    message?: string
+}
+
+function validateEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
 
 export default function Contact() {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' })
+    const [errors, setErrors] = useState<FormErrors>({})
     const [isSubmitted, setIsSubmitted] = useState(false)
     const sectionRef = useScrollReveal({ y: 40 })
 
+    const validate = (): FormErrors => {
+        const newErrors: FormErrors = {}
+        if (!formData.name.trim()) newErrors.name = 'Name is required.'
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required.'
+        } else if (!validateEmail(formData.email)) {
+            newErrors.email = 'Please enter a valid email address.'
+        }
+        if (!formData.message.trim()) {
+            newErrors.message = 'Message is required.'
+        } else if (formData.message.trim().length < 10) {
+            newErrors.message = 'Message must be at least 10 characters.'
+        }
+        return newErrors
+    }
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault()
-        setIsSubmitted(true)
+        const validationErrors = validate()
+        setErrors(validationErrors)
+
+        if (Object.keys(validationErrors).length === 0) {
+            setIsSubmitted(true)
+        }
     }
 
     return (
@@ -78,9 +110,7 @@ export default function Contact() {
                         {/* Social Links */}
                         <div className="flex gap-3 mt-2">
                             {[
-                                { icon: <Github className="w-4 h-4" />, href: '#', label: 'GitHub' },
-                                { icon: <Linkedin className="w-4 h-4" />, href: '#', label: 'LinkedIn' },
-                                { icon: <Twitter className="w-4 h-4" />, href: '#', label: 'Twitter' },
+                                { icon: <Github className="w-4 h-4" />, href: 'https://github.com/SSuryaRao', label: 'GitHub' },
                             ].map((social) => (
                                 <a
                                     key={social.label}
@@ -109,6 +139,7 @@ export default function Contact() {
                                     onClick={() => {
                                         setIsSubmitted(false)
                                         setFormData({ name: '', email: '', message: '' })
+                                        setErrors({})
                                     }}
                                     className="btn-secondary !px-5 !py-2.5 !text-sm mt-4 cursor-pointer"
                                 >
@@ -116,7 +147,7 @@ export default function Contact() {
                                 </button>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                            <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
                                 <div>
                                     <label htmlFor="name" className="text-sm font-medium text-gray-300 mb-2 block">
                                         Name
@@ -125,11 +156,21 @@ export default function Contact() {
                                         id="name"
                                         type="text"
                                         placeholder="Your name"
-                                        className="glass-input"
+                                        className={`glass-input ${errors.name ? 'border-red-500/60' : ''}`}
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, name: e.target.value })
+                                            if (errors.name) setErrors({ ...errors, name: undefined })
+                                        }}
+                                        aria-invalid={!!errors.name}
+                                        aria-describedby={errors.name ? 'name-error' : undefined}
                                         required
                                     />
+                                    {errors.name && (
+                                        <p id="name-error" role="alert" className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {errors.name}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -140,11 +181,21 @@ export default function Contact() {
                                         id="email"
                                         type="email"
                                         placeholder="your@email.com"
-                                        className="glass-input"
+                                        className={`glass-input ${errors.email ? 'border-red-500/60' : ''}`}
                                         value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, email: e.target.value })
+                                            if (errors.email) setErrors({ ...errors, email: undefined })
+                                        }}
+                                        aria-invalid={!!errors.email}
+                                        aria-describedby={errors.email ? 'email-error' : undefined}
                                         required
                                     />
+                                    {errors.email && (
+                                        <p id="email-error" role="alert" className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {errors.email}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -155,11 +206,21 @@ export default function Contact() {
                                         id="message"
                                         rows={6}
                                         placeholder="Tell me about your project..."
-                                        className="glass-input resize-none"
+                                        className={`glass-input resize-none ${errors.message ? 'border-red-500/60' : ''}`}
                                         value={formData.message}
-                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, message: e.target.value })
+                                            if (errors.message) setErrors({ ...errors, message: undefined })
+                                        }}
+                                        aria-invalid={!!errors.message}
+                                        aria-describedby={errors.message ? 'message-error' : undefined}
                                         required
                                     />
+                                    {errors.message && (
+                                        <p id="message-error" role="alert" className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {errors.message}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <button type="submit" className="btn-glow flex items-center justify-center gap-2 w-full mt-2 cursor-pointer">

@@ -4,7 +4,9 @@
       "WebFetch(domain:sih-2025-indol.vercel.app)",
       "WebFetch(domain:careercraft-frontend-1030709276859.us-central1.run.app)",
       "WebFetch(domain:bgmistore.vercel.app)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx next build:*)"
     ]
   }
 }

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { UAParser } from 'ua-parser-js'
 
 export function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
-        const parser = new UAParser()
-        const result = parser.getResult()
-        setIsMobile(result.device.type === 'mobile' || result.device.type === 'tablet')
+        // Use capability-based detection instead of UA sniffing
+        const query = window.matchMedia('(hover: none) and (pointer: coarse)')
+        setIsMobile(query.matches)
+
+        const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+        query.addEventListener('change', handleChange)
+        return () => query.removeEventListener('change', handleChange)
     }, [])
 
     return isMobile
